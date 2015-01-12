@@ -5,6 +5,44 @@
 # Install Postgresql and create specified databases and users.
 #
 
+file "remove deprecated Pitti PPA apt repository" do
+  action :delete
+  path "/etc/apt/sources.list.d/pitti-postgresql-ppa"
+end
+
+bash "adding postgresql repo" do
+  user "root"
+  code <<-EOC
+  echo "deb http://apt.postgresql.org/pub/repos/apt/ #{node['lsb']['codename']}-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+  wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo apt-key add -
+  EOC
+  action :run
+end
+
+execute "run apt-get update" do
+  command 'apt-get update'
+  action :run
+end
+
+packages = %w(
+  libpq-dev
+  git-core 
+  curl 
+  zlib1g-dev
+  libssl-dev 
+  libreadline-dev 
+  libyaml-dev 
+  libsqlite3-dev 
+  sqlite3 
+  libxml2-dev 
+  libxslt1-dev
+  postgresql-contrib
+)
+
+packages.each { |name| package name }
+
+package "postgresql-#{node['postgresql']['version']}"
+
 root_password = node["databox"]["db_root_password"]
 if root_password
   Chef::Log.info %(Set node["postgresql"]["password"]["postgres"] attributes to node["databox"]["db_root_password"])
